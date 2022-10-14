@@ -21,7 +21,7 @@ OMD[mmlan]:~$ find . -iname 'btrfs_health*.py'
 5. Goto your Check_mk webinterface. Open "Service Rules" and search for BTRFS. BTRFS Health items should appear.
 
 ## On the Linux Server with the btrfs filesystem (NOT THE CHECK_MK SERVER!):
-1. Copy the plugin script [check_mk/agents/plugins/btrfs_health](check_mk/agents/plugins/btrfs_health) into /usr/lib/check_mk_agent/plugins/
+1. Copy the plugin script [src/local/share/check_mk/agents/plugins/btrfs_health](src/local/share/check_mk/agents/plugins/btrfs_health) into /usr/lib/check_mk_agent/plugins/
 2. chmod 755 /usr/lib/check_mk_agent/plugins/btrfs_health
 3. Execute the script: /usr/lib/check_mk_agent/plugins/btrfs_health. If everythings works the output should look like:
 ```
