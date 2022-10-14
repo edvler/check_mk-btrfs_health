@@ -1,0 +1,21 @@
+title: BTRFS health
+agents: linux
+author: Matthias Maderer <edvler@edvler-blog.de>
+license: GPLv2
+distribution: check_mk
+description:
+ This check parses the output of the btrfs command.
+
+ {Installation:}
+ https://github.com/edvler/check_mk-btrfs_health
+
+ How btrfs works:
+ - the filesystem using block group
+ ...
+ ...
+ Beschreiben warum defaults nur Metadaten berücksichtigen
+ 
+inventory:
+ Services generated for:
+ * btrfs scrub status
+ * btrfs device stats

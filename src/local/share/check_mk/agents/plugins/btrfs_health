@@ -1,0 +1,25 @@
+#!/bin/sh
+mounts_btrfs=$(mount | grep btrfs | awk '{ print $3 }')
+
+echo "<<<btrfs_health_dstats>>>"
+btrfs --version
+for vol in $mounts_btrfs
+do
+    btrfs device stats $vol | awk -v vol="$vol" '{print "stats::" vol " " $0}'
+done
+
+
+echo "<<<btrfs_health_usage>>>"
+btrfs --version
+for vol in $mounts_btrfs
+do
+    btrfs filesystem usage --raw $vol | awk -v vol="$vol" '{print "usage::" vol " " $0}'
+done
+
+
+echo "<<<btrfs_health_scrub>>>"
+btrfs --version
+for vol in $mounts_btrfs
+do
+    btrfs scrub status $vol | awk -v vol="$vol" '{print "scrub::" vol " " $0}'
+done
