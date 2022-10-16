@@ -370,8 +370,8 @@ def check_btrfs_health_usage(item, params, section):
 
     #intelligent metadata check
     if (params['metadata_intelligent'][0] >= 0 and params['metadata_intelligent'][1] >= 0):
+        pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
         if (block_group_usage['Device_unallocated'] <= int(params['metadata_intelligent'][0])):
-            pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
             if(pm >= float(params['metadata_intelligent'][1])):
                 yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
                 return
