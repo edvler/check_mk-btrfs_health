@@ -124,6 +124,9 @@ def check_btrfs_health_scrub(item, params, section):
         if (item == volume and infotype == 'scrub'):
             match_count = match_count + 1 
 
+            if (len(line) <= 1):
+                continue
+
             #format from btrfs --version = 4....
             if(len(line) >= 4 and line[1] + ' ' + line[2] + ' ' + line[3] == 'scrub started at'):
                 scrub_date_raw = line[4] + ' ' + line[5] + ' ' + line[6] + ' ' + line[7] + ' ' + line[8]
@@ -151,7 +154,7 @@ def check_btrfs_health_scrub(item, params, section):
             if(line[1] == "Duration:"):
                 scrub_duration = line[2]
                 scrub_duration = line[2]
-            if(line[1] + ' ' + line[2] + ' ' + line[3] == 'Total to scrub:'):
+            if(len(line) >= 5 and line[1] + ' ' + line[2] + ' ' + line[3] == 'Total to scrub:'):
                 scrub_size = line[4]
             if(len(line) >= 3 and line[1] + ' ' + line[2] == 'Error summary:'):
                 if(len(line) >= 6 and line[3] + ' ' + line[4] + ' ' + line[5] == "no errors found"):
