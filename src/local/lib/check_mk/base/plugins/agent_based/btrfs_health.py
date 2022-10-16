@@ -368,8 +368,14 @@ def check_btrfs_health_usage(item, params, section):
     yield allocation_yielder(params['system_allocation'][0], params['system_allocation'][1], block_group_usage['System_used'], block_group_usage['System_size'], "System")
     yield allocation_yielder(params['overall_allocation'][0], params['overall_allocation'][1], block_group_usage['Device_allocated'], block_group_usage['Device_size'], "Overall")
 
-
-
+    #intelligent metadata check
+    if (params['metadata_intelligent'][0] >= 0 and params['metadata_intelligent'][1] >= 0):
+        if (block_group_usage['Device_unallocated'] <= int(params['metadata_intelligent'][0])):
+            pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
+            if(pm >= float(params['metadata_intelligent'][1])):
+                yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
+                return
+        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
 
 
 def allocation_yielder(warn, err, used, size, text):
@@ -394,8 +400,9 @@ register.check_plugin(
     check_function = check_btrfs_health_usage,
     check_default_parameters = {'overall_allocation': (None,None),
                                 'data_allocation': (None,None),
-                                'metadata_allocation': (70.0,80.0),
-                                'system_allocation': (70.0,80.0), 
+                                'metadata_allocation': (None,None),
+                                'system_allocation': (None,None),
+                                'metadata_intelligent': (5368709120,75.0), #5GB,75percent
                                 },
     check_ruleset_name = "btrfs_health_ruleset_usage"
 )

@@ -188,23 +188,33 @@ def _parameter_btrfs_health_usage():
     return Dictionary(
         required_keys=[],
         elements = [   
+            ('metadata_intelligent',
+             Tuple(
+                 title = "METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations.",
+                 help=btrfs_usage_info,
+                 elements = [
+                    Integer(title=_("Minimum unallocated block groups"), unit=_("MiB"), default_value=(5000)),
+                    Percentage(title=_("METADATA allocation in percent"), unit=_("percent"), default_value=(75.0)),
+                 ]
+            )
+          ),             
             (
                 "metadata_allocation",
                 Alternative(
-                    title=_("Metadata allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
+                    title=_("METADATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
                     default_value=(70.0,80.0),
                     
                     help=btrfs_usage_info,
                     elements=[
                         Tuple(
-                            title=_("Metadata allocation relative to Metadata size"),
+                            title=_("METADATA allocation relative to METADATA size"),
                             elements=[
                                 Percentage(title=_("Warning at or above"), unit=_("percent")),
                                 Percentage(title=_("Critical at or above"), unit=_("percent")),
                             ],
                         ),
                         Tuple(
-                            title=_("Absolute Metadata allocation"),
+                            title=_("Absolute METADATA allocation"),
                             elements=[
                                 Integer(title=_("Warning at or above"), unit=_("MiB")),
                                 Integer(title=_("Critical at or above"), unit=_("MiB")),
@@ -264,18 +274,18 @@ def _parameter_btrfs_health_usage():
             (
                 "overall_allocation",
                 Alternative(
-                    title=_("Overall allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
+                    title=_("OVERALL allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
                     help=btrfs_usage_info,
                     elements=[
                         Tuple(
-                            title=_("Overall allocation relative to Overall size"),
+                            title=_("OVERALL allocation relative to OVERALL size"),
                             elements=[
                                 Percentage(title=_("Warning at or above"), unit=_("percent")),
                                 Percentage(title=_("Critical at or above"), unit=_("percent")),
                             ],
                         ),
                         Tuple(
-                            title=_("Absolute Overall allocation"),
+                            title=_("Absolute OVERALL allocation"),
                             elements=[
                                 Integer(title=_("Warning at or above"), unit=_("MiB")),
                                 Integer(title=_("Critical at or above"), unit=_("MiB")),
@@ -283,7 +293,7 @@ def _parameter_btrfs_health_usage():
                         ),
                     ],
                 ),
-            ),                                 
+            ),           
         ]
     )
 
