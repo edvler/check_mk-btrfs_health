@@ -5,7 +5,7 @@
            'agents': ['plugins/btrfs_health'],
            'alert_handlers': [],
            'bin': [],
-           'checkman': ['btrfs_health'],
+           'checkman': ['btrfs_health_scrub', 'btrfs_health_dstats', 'btrfs_health_usage'],
            'doc': [],
            'inventory': [],
            'lib': [],
