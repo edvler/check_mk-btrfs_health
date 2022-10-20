@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-
 # Author: Matthias Maderer
 # E-Mail: edvler@edvler-blog.de
-# URL: https://github.com/edvler/check_mk_urbackup-check
+# URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
 #example: \lib\python3\cmk\gui\plugins\wato\check_parameters\memory.py
@@ -170,7 +168,7 @@ rulespec_registry.register(
 
 btrfs_usage_info=_(
                         "The BTRFS filesystem stores data in a internal structure called block groups. " 
-                        "More informations could be found with: man mkfs.btrfs -> section BLOCK GROUPS, CHUNKS, RAID. "
+                        "More informations could be found in the manpage: man mkfs.btrfs -> section BLOCK GROUPS, CHUNKS, RAID. "
                         "From the manpage: "
                         "-- A typical size of metadata block group is 256MiB (filesystem smaller than 50GiB) and 1GiB (larger than 50GiB), for data it’s 1GiB. The system block group size is a few megabytes. -- "
                         "The command 'btrfs filesystem usage ' displays the allocated sizes. "
@@ -178,10 +176,9 @@ btrfs_usage_info=_(
                         "But There are some situations that are cirtical: "
                         "1. No 'Device unallocated' space is avaliable (or less than 1GB) AND Metadata is running out of space "
                         "2. No 'Device unallocated' space is avaliable (or less than 1GB) AND System is running out of space "
-                        "For this reason the default warn/crit values for METADATA and SYSTEM are 70%/80%. "
-                        "If no 'Device unallocated' space is avaliable two resultions availiable: "
+                        "If no 'Device unallocated' space is avaliable two fixes availiable: "
                         "- extend the disk "
-                        "OR man btrfs-balance --> See examples for parameter -dusage or -musage "
+                        "- OR man btrfs-balance --> See examples for parameter -dusage or -musage "
                     )
 
 def _parameter_btrfs_health_usage():

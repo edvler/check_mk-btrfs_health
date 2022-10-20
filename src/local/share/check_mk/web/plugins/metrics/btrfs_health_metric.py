@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Author: Matthias Maderer
+# E-Mail: edvler@edvler-blog.de
+# URL: https://github.com/edvler/check_mk-btrfs_health
+# License: GPLv2
 
 from cmk.gui.i18n import _
 from cmk.gui.plugins.metrics.utils import graph_info, metric_info

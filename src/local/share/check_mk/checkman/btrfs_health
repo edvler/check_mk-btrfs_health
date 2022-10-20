@@ -4,18 +4,18 @@ author: Matthias Maderer <edvler@edvler-blog.de>
 license: GPLv2
 distribution: check_mk
 description:
- This check parses the output of the btrfs command.
+ This plugin checks important parameters of btrfs file systems.
+ A brief description how btrfs works could and some recommendations could be found at the github page mentioned below.
 
- {Installation:}
+ {Checks:}
+ * Device stats (man btrfs-device): check for I/O errors and device related errors
+ * Scrub status (man btrfs-scrub): check the checksum verification of the filesystem
+ * Filesystem usage (man btrfs-filesystem): Check block group allocation of the btrfs filesystem
+
+ The check plugin can be configured via the "BTRFS Health" rules. Here, users can customize the warning and critical levels for the device stats, the filesystem usage and the scrub usage.
+
+ {More informations and installation:}
  https://github.com/edvler/check_mk-btrfs_health
-
- How btrfs works:
- - the filesystem using block group
- ...
- ...
- Beschreiben warum defaults nur Metadaten berücksichtigen
  
 inventory:
- Services generated for:
- * btrfs scrub status
- * btrfs device stats
+ 3 services generated for each filesystem(btrfs_health scrub status, btrfs_health device stats, btrfs_health block group allocation)

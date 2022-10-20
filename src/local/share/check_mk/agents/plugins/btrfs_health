@@ -1,4 +1,10 @@
 #!/bin/sh
+
+# Author: Matthias Maderer
+# E-Mail: edvler@edvler-blog.de
+# URL: https://github.com/edvler/check_mk-btrfs_health
+# License: GPLv2
+
 mounts_btrfs=$(mount | grep btrfs | awk '{ print $3 }')
 
 echo "<<<btrfs_health_dstats>>>"

@@ -1,5 +1,26 @@
 # [Check MK](https://checkmk.com) Plugin to check the health of btrfs filesystems
 
+# Informations about BTRFS
+## How BTRFS works
+The BTRFS filesystem stores data in a internal structure called block groups.
+More informations could be found in the manpage: man mkfs.btrfs -> section BLOCK GROUPS, CHUNKS, RAID.
+
+From the manpage:
+-- A typical size of metadata block group is 256MiB (filesystem smaller than 50GiB) and 1GiB (larger than 50GiB), for data it’s 1GiB. The system block group size is a few megabytes. --
+The command 'btrfs filesystem usage ' displays the allocated sizes.
+As long as 'Device unallocated' are greater than 1GB new block groups can be always allocated and there is no problem.
+But There are some situations that are cirtical:
+1. No 'Device unallocated' space is avaliable (or less than 1GB) AND Metadata is running out of space
+2. No 'Device unallocated' space is avaliable (or less than 1GB) AND System is running out of space
+If no 'Device unallocated' space is avaliable two fixes availiable: "
+- extend the disk "
+- OR man btrfs-balance --> See examples for parameter -dusage or -musage "
+
+## Recommendations
+* Run btrfs scrub at least weekly: See [tools/btrfs_check.sh](tools/btrfs_check.sh) for a simple script that scrubs every volume on an server
+* For every volume the 'Device unallocated' and METADATA allocation levels should be examined. 
+
+
 # Installation
 
 ## On the Monitoring Server where Check_mk is installed:

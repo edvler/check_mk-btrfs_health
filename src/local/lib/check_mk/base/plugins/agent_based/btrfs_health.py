@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: Matthias Maderer
 # E-Mail: edvler@edvler-blog.de
-# URL: https://github.com/edvler/
+# URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
 #from ctypes import sizeof
