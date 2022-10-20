@@ -9,9 +9,11 @@ From the manpage:
 -- A typical size of metadata block group is 256MiB (filesystem smaller than 50GiB) and 1GiB (larger than 50GiB), for data it’s 1GiB. The system block group size is a few megabytes. --
 The command 'btrfs filesystem usage ' displays the allocated sizes.
 As long as 'Device unallocated' are greater than 1GB new block groups can be always allocated and there is no problem.
+
 But There are some situations that are cirtical:
 1. No 'Device unallocated' space is avaliable (or less than 1GB) AND Metadata is running out of space
 2. No 'Device unallocated' space is avaliable (or less than 1GB) AND System is running out of space
+
 If no 'Device unallocated' space is avaliable two fixes availiable: "
 - extend the disk "
 - OR man btrfs-balance --> See examples for parameter -dusage or -musage "
