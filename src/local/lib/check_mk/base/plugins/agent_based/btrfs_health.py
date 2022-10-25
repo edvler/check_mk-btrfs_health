@@ -76,8 +76,8 @@ def inventory_btrfs_health_scrub(section):
 def inventory_btrfs_health_dstats(section):
     distinct_volumes, distinct_devices = inventory_btrfs_health_base(section)
     
-    for i in range(len(distinct_devices)):
-        yield Service(item=distinct_devices[i])
+    for i in range(len(distinct_volumes)):
+        yield Service(item=distinct_volumes[i])
 
 def inventory_btrfs_health_usage(section):
     distinct_volumes, distinct_devices = inventory_btrfs_health_base(section)
@@ -244,7 +244,7 @@ def check_btrfs_health_dstats(item, params, section):
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
 
-        if (device == item and infotype == 'stats'):
+        if (volume == item and infotype == 'stats'):
             #stats::/mnt/test [/dev/loop0].write_io_errs    0
             #stats::/mnt/test [/dev/loop0].read_io_errs     0
             #stats::/mnt/test [/dev/loop0].flush_io_errs    0
@@ -272,12 +272,7 @@ def check_btrfs_health_dstats(item, params, section):
 
         warn, crit = params[errtype]
 
-        if (device_stats_errors_sum == 0):
-            #summary = "No errors found."
-            details = errtype + ": " + str(device_stats_errors[errtype])
-        else:
-            #summary = "Errors in cmd btrfs device stats found!"
-            details = errtype + ": " + str(device_stats_errors[errtype])
+        details = errtype + ": " + str(device_stats_errors[errtype])
 
         yield warn_crit_decider(device_stats_errors[errtype], warn, crit, details, None)
 
