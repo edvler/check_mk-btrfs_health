@@ -257,9 +257,10 @@ def check_btrfs_health_dstats(item, params, section):
             #else:
             #    device_stats_errors[device][devicename] = line[2]
 
-            metric = line[1].split(".")[1]
-            device_stats_errors[metric] = int(line[2])
-            device_stats_errors_sum += int(line[2])
+            if (len(line) >= 3):
+                metric = line[1].split(".")[1]
+                device_stats_errors[metric] = int(line[2])
+                device_stats_errors_sum += int(line[2])
 
     if (not "write_io_errs" in device_stats_errors):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
