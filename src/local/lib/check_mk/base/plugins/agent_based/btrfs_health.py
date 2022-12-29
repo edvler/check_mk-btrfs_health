@@ -153,7 +153,6 @@ def check_btrfs_health_scrub(item, params, section):
                 scrub_status = line[2]
             if(line[1] == "Duration:"):
                 scrub_duration = line[2]
-                scrub_duration = line[2]
             if(len(line) >= 5 and line[1] + ' ' + line[2] + ' ' + line[3] == 'Total to scrub:'):
                 scrub_size = line[4]
             if(len(line) >= 3 and line[1] + ' ' + line[2] == 'Error summary:'):
@@ -171,11 +170,13 @@ def check_btrfs_health_scrub(item, params, section):
 
     #No Scrub
     if (scrub_errors == None or scrub_status == None):
-        yield Result(state=State.CRIT, summary="No scrub done") 
+        yield Result(state=State.UNKNOWN, summary="No scrub done") 
         return
 
-    x = time.strptime(scrub_duration, '%H:%M:%S')
-    scrub_dur = datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds()
+    #x = time.strptime(scrub_duration, '%H:%M:%S')
+    #scrub_dur = datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds()
+    x = scrub_duration.split(":")
+    scrub_dur = int(x[0])*60*60 + int(x[1])*60 + int(x[2])
 
     #running scrub
     if(scrub_status == "running" and scrub_errors >= 0):
