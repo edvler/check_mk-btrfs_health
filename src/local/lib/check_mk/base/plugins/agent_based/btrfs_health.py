@@ -383,7 +383,7 @@ def allocation_yielder(warn, err, used, size, text):
 
     details = text + ": " + str(round(p,2)) + "% used (" + render.bytes(used) + " of " + render.bytes(size) 
 
-    if (warn == None and err == None):
+    if (warn == 0 and err == 0):
         return warn_crit_decider(0,1,1, details + ", No warn/crit defined)",None)
 
     if (percent_or_absolute(warn) == "percent"):
@@ -398,10 +398,10 @@ register.check_plugin(
     service_name = "btrfs_health block group allocation %s",
     discovery_function = inventory_btrfs_health_usage,
     check_function = check_btrfs_health_usage,
-    check_default_parameters = {'overall_allocation': (None,None),
-                                'data_allocation': (None,None),
-                                'metadata_allocation': (None,None),
-                                'system_allocation': (None,None),
+    check_default_parameters = {'overall_allocation': (0,0),
+                                'data_allocation': (0,0),
+                                'metadata_allocation': (0,0),
+                                'system_allocation': (0,0),
                                 'metadata_intelligent': (5368709120,75.0), #5GB,75percent
                                 },
     check_ruleset_name = "btrfs_health_ruleset_usage"
