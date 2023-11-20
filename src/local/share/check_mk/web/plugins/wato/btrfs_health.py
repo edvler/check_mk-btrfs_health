@@ -190,7 +190,7 @@ def _parameter_btrfs_health_usage():
                  title = "METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations.",
                  help=btrfs_usage_info,
                  elements = [
-                    Integer(title=_("Minimum unallocated block groups"), unit=_("MiB"), default_value=(5000)),
+                    Filesize(title=_("Minimum unallocated block groups")),
                     Percentage(title=_("METADATA allocation in percent"), unit=_("percent"), default_value=(75.0)),
                  ]
             )
@@ -199,7 +199,6 @@ def _parameter_btrfs_health_usage():
                 "metadata_allocation",
                 Alternative(
                     title=_("METADATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
-                    default_value=(70.0,80.0),
                     
                     help=btrfs_usage_info,
                     elements=[
@@ -213,8 +212,8 @@ def _parameter_btrfs_health_usage():
                         Tuple(
                             title=_("Absolute METADATA allocation"),
                             elements=[
-                                Integer(title=_("Warning at or above"), unit=_("MiB")),
-                                Integer(title=_("Critical at or above"), unit=_("MiB")),
+                                Filesize(title=_("Warning at or above")),
+                                Filesize(title=_("Critical at or above")),
                             ],
                         ),
                     ],
@@ -238,8 +237,8 @@ def _parameter_btrfs_health_usage():
                         Tuple(
                             title=_("Absolute SYSTEM allocation"),
                             elements=[
-                                Integer(title=_("Warning at or above"), unit=_("MiB")),
-                                Integer(title=_("Critical at or above"), unit=_("MiB")),
+                                Filesize(title=_("Warning at or above")),
+                                Filesize(title=_("Critical at or above")),
                             ],
                         ),
                     ],
@@ -261,8 +260,8 @@ def _parameter_btrfs_health_usage():
                         Tuple(
                             title=_("Absolute DATA allocation"),
                             elements=[
-                                Integer(title=_("Warning at or above"), unit=_("MiB")),
-                                Integer(title=_("Critical at or above"), unit=_("MiB")),
+                                Filesize(title=_("Warning at or above")),
+                                Filesize(title=_("Critical at or above")),
                             ],
                         ),
                     ],
@@ -284,8 +283,8 @@ def _parameter_btrfs_health_usage():
                         Tuple(
                             title=_("Absolute OVERALL allocation"),
                             elements=[
-                                Integer(title=_("Warning at or above"), unit=_("MiB")),
-                                Integer(title=_("Critical at or above"), unit=_("MiB")),
+                                Filesize(title=_("Warning at or above")),
+                                Filesize(title=_("Critical at or above")),
                             ],
                         ),
                     ],

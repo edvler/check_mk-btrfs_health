@@ -19,9 +19,8 @@
                    'plugins/metrics/btrfs_health_metric.py',
                    'plugins/perfometer/btrfs_health.py']},
  'name': 'btrfs_health',
- 'num_files': 8,
  'title': 'Plugin to check the health of btrfs filesystems',
- 'version': '1.0.4',
+ 'version': '1.0.16',
  'version.min_required': '2.0.0p1',
- 'version.packaged': '2.1.0p16',
+ 'version.packaged': '2.2.0p11',
  'version.usable_until': None}
