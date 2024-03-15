@@ -211,7 +211,7 @@ def check_btrfs_health_scrub(item, params, section):
     scrub_output_detail = 'Warn/crit at ' + render.timespan(warn_scrub_age) + '/' + render.timespan(critical_scrub_age) + ')'
 
     if(scrub_errors > 0):
-        yield Result(state=State.CRIT, summary=scrub_errors + " found. Check filesystem with btrfs scrub status -R")
+        yield Result(state=State.CRIT, summary=str(scrub_errors) + " found. Check filesystem with btrfs scrub status -R")
     elif(scrub_errors == 0):
         yield warn_crit_decider(scrub_age, warn_scrub_age, critical_scrub_age, scrub_output_summary, scrub_output_detail)
 
