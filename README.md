@@ -43,10 +43,22 @@ OMD[mmlan]:~$ find . -iname 'btrfs_health*.py'
 ```
 5. Goto your Check_mk webinterface. Open "Service Rules" and search for BTRFS. BTRFS Health items should appear.
 
-## On the Linux Server with the btrfs filesystem (NOT THE CHECK_MK SERVER!):
+## When using the Enterprise Edition
+1. Using the WATO's rule search, search for `btrfs_health` & create a rule of type `BTRFS health (Linux)` in the `Agent plugins` section. Enable the distribution of the plugin.
+2. Bake new agents in the bakery.
+3. On the Linux Server with the btrfs filesystem update the agent with `cmk-update-agent -v`.
+
+## When using the Raw Edition
+
+On the Linux Server with the btrfs filesystem (NOT THE CHECK_MK SERVER!), do the following:
+
 1. Copy the plugin script [src/local/share/check_mk/agents/plugins/btrfs_health](src/local/share/check_mk/agents/plugins/btrfs_health) into /usr/lib/check_mk_agent/plugins/
 2. chmod 755 /usr/lib/check_mk_agent/plugins/btrfs_health
-3. Execute the script: /usr/lib/check_mk_agent/plugins/btrfs_health. If everythings works the output should look like:
+
+## Testing the agent plugin
+
+On the Linux Server with the btrfs filesystem execute the script: `/usr/lib/check_mk_agent/plugins/btrfs_health`. If everythings works the output should look like:
+
 ```
 <<<btrfs_health_dstats>>>
 btrfs-progs v4.20.1
