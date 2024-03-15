@@ -9,6 +9,7 @@
 from .agent_based_api.v1 import *
 import time
 import datetime
+import re
 
 def percent_or_absolute(param):
     if (param is not None and isinstance(param, float)):
@@ -161,6 +162,8 @@ def check_btrfs_health_scrub(item, params, section):
                 else:
                     if(len(line) >= 4 and line[3].isnumeric()):
                         scrub_errors = int(line[3])
+                    elif(len(line) >= 4 and re.search(r'^.+=[0-9]+$', line[3])):
+                        scrub_errors = int(re.sub(r'^.+=', '', line[3]))
                     else:
                         scrub_errors = 9999999
 
