@@ -1,11 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 
 # Author: Matthias Maderer
 # E-Mail: edvler@edvler-blog.de
 # URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
-mounts_btrfs=$(mount | grep btrfs | awk '{ print $3 }')
+export LC_ALL=C
+
+mounts_btrfs=""
+devices_btrfs="$(awk '/ btrfs / { print $1 }' < /proc/mounts | sort | uniq)"
+
+for dev in $devices_btrfs; do
+    mounts_btrfs="${mounts_btrfs} "$(awk "\$1 == \"${dev}\" { print \$2; exit }" < /proc/mounts)
+done
+
+mounts_btrfs=${mounts_btrfs# }
+
+test -z $mounts_btrfs && exit
 
 echo "<<<btrfs_health_dstats>>>"
 btrfs --version
