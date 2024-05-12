@@ -9,6 +9,7 @@
 from .agent_based_api.v1 import *
 import time
 import datetime
+import re
 
 def percent_or_absolute(param):
     if (param is not None and isinstance(param, float)):
@@ -161,6 +162,8 @@ def check_btrfs_health_scrub(item, params, section):
                 else:
                     if(len(line) >= 4 and line[3].isnumeric()):
                         scrub_errors = int(line[3])
+                    elif(len(line) >= 4 and re.search(r'^.+=[0-9]+$', line[3])):
+                        scrub_errors = int(re.sub(r'^.+=', '', line[3]))
                     else:
                         scrub_errors = 9999999
 
@@ -211,7 +214,7 @@ def check_btrfs_health_scrub(item, params, section):
     scrub_output_detail = 'Warn/crit at ' + render.timespan(warn_scrub_age) + '/' + render.timespan(critical_scrub_age) + ')'
 
     if(scrub_errors > 0):
-        yield Result(state=State.CRIT, summary=scrub_errors + " found. Check filesystem with btrfs scrub status -R")
+        yield Result(state=State.CRIT, summary=str(scrub_errors) + " found. Check filesystem with btrfs scrub status -R")
     elif(scrub_errors == 0):
         yield warn_crit_decider(scrub_age, warn_scrub_age, critical_scrub_age, scrub_output_summary, scrub_output_detail)
 
