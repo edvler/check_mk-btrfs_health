@@ -1,5 +1,17 @@
 #!/bin/sh
-mounts_btrfs=$(mount | grep btrfs | awk '{ print $3 }')
+export LC_ALL=C
+
+mounts_btrfs=""
+devices_btrfs="$(awk '/ btrfs / { print $1 }' < /proc/mounts | sort | uniq)"
+
+for dev in $devices_btrfs; do
+    mounts_btrfs="${mounts_btrfs} "$(awk "\$1 == \"${dev}\" { print \$2; exit }" < /proc/mounts)
+done
+
+mounts_btrfs=${mounts_btrfs# }
+
+test -z $mounts_btrfs && exit
+
 
 for vol in $mounts_btrfs
 do
