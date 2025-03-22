@@ -35,14 +35,19 @@ def getDateFromString(datetime_string):
     return time.strptime(datetime_string, '%a %b %d %H:%M:%S %Y')
 
 def get_base_infos(line):
-    volume = line[0].split("::")[1]
-    infotype = line[0].split("::")[0]
+    s = line[0].split("::")
 
-    device = None
-    if (infotype == 'stats' and len(line) > 1):
-        device = volume + " " + line[1].split(".")[0]
+    if 'stats' in s or 'usage' in s or 'scrub' in s: #check if valid type
+        volume = line[0].split("::")[1]
+        infotype = line[0].split("::")[0]
 
-    return volume,infotype,device
+        device = None
+        if (infotype == 'stats' and len(line) > 1):
+            device = volume + " " + line[1].split(".")[0]
+
+        return volume,infotype,device
+    else:
+        return None, None, None
 
 
 
@@ -121,6 +126,9 @@ def check_btrfs_health_scrub(item, params, section):
         #scrub::/bkp/bkp01       total bytes scrubbed: 0.00B with 0 errors
 
         volume, infotype, device = get_base_infos(line)
+
+        if infotype == None:
+            continue
 
         if (item == volume and infotype == 'scrub'):
             match_count = match_count + 1 
@@ -248,6 +256,9 @@ def check_btrfs_health_dstats(item, params, section):
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
 
+        if infotype == None:
+            continue
+
         if (volume == item and infotype == 'stats'):
             #stats::/mnt/test [/dev/loop0].write_io_errs    0
             #stats::/mnt/test [/dev/loop0].read_io_errs     0
@@ -313,6 +324,9 @@ def check_btrfs_health_usage(item, params, section):
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
 
+        if infotype == None:
+            continue
+        
         #collect usage informations
         if (item == volume and infotype == 'usage'):
             #Overall:
