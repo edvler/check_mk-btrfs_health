@@ -6,7 +6,7 @@
 # License: GPLv2
 
 #from ctypes import sizeof
-from .agent_based_api.v1 import *
+from cmk.agent_based.v2 import *
 import time
 import datetime
 import re
@@ -35,19 +35,14 @@ def getDateFromString(datetime_string):
     return time.strptime(datetime_string, '%a %b %d %H:%M:%S %Y')
 
 def get_base_infos(line):
-    s = line[0].split("::")
+    volume = line[0].split("::")[1]
+    infotype = line[0].split("::")[0]
 
-    if 'stats' in s or 'usage' in s or 'scrub' in s: #check if valid type
-        volume = line[0].split("::")[1]
-        infotype = line[0].split("::")[0]
+    device = None
+    if (infotype == 'stats' and len(line) > 1):
+        device = volume + " " + line[1].split(".")[0]
 
-        device = None
-        if (infotype == 'stats' and len(line) > 1):
-            device = volume + " " + line[1].split(".")[0]
-
-        return volume,infotype,device
-    else:
-        return None, None, None
+    return volume,infotype,device
 
 
 
@@ -126,9 +121,6 @@ def check_btrfs_health_scrub(item, params, section):
         #scrub::/bkp/bkp01       total bytes scrubbed: 0.00B with 0 errors
 
         volume, infotype, device = get_base_infos(line)
-
-        if infotype == None:
-            continue
 
         if (item == volume and infotype == 'scrub'):
             match_count = match_count + 1 
@@ -226,7 +218,7 @@ def check_btrfs_health_scrub(item, params, section):
     elif(scrub_errors == 0):
         yield warn_crit_decider(scrub_age, warn_scrub_age, critical_scrub_age, scrub_output_summary, scrub_output_detail)
 
-register.check_plugin(
+check_plugin_btrfs_scrub = CheckPlugin(
     name = "btrfs_health_scrub",
     service_name = "btrfs_health scrub status %s",
     discovery_function = inventory_btrfs_health_scrub,
@@ -255,9 +247,6 @@ def check_btrfs_health_dstats(item, params, section):
 
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
-
-        if infotype == None:
-            continue
 
         if (volume == item and infotype == 'stats'):
             #stats::/mnt/test [/dev/loop0].write_io_errs    0
@@ -292,7 +281,7 @@ def check_btrfs_health_dstats(item, params, section):
 
         yield warn_crit_decider(device_stats_errors[errtype], warn, crit, details, None)
 
-register.check_plugin(
+check_plugin_btrfs_dstats = CheckPlugin(
     name = "btrfs_health_dstats",
     service_name = "btrfs_health device stats %s",
     discovery_function = inventory_btrfs_health_dstats,
@@ -324,9 +313,6 @@ def check_btrfs_health_usage(item, params, section):
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
 
-        if infotype == None:
-            continue
-        
         #collect usage informations
         if (item == volume and infotype == 'usage'):
             #Overall:
@@ -410,7 +396,7 @@ def allocation_yielder(warn, err, used, size, text):
 
 
 
-register.check_plugin(
+check_plugin_btrfs_health = CheckPlugin(
     name = "btrfs_health_usage",
     service_name = "btrfs_health block group allocation %s",
     discovery_function = inventory_btrfs_health_usage,
