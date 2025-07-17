@@ -11,7 +11,7 @@ mounts_btrfs=""
 devices_btrfs="$(awk '/ btrfs / { print $1 }' < /proc/mounts | sort | uniq)"
 
 for dev in $devices_btrfs; do
-    mounts_btrfs="${mounts_btrfs} "$(awk "\$1 == \"${dev}\" { print \$2; exit }" < /proc/mounts)
+    mounts_btrfs="${mounts_btrfs} "$(awk "\$1 == \"${dev}\" { print \$2; }" < /proc/mounts)
 done
 
 mounts_btrfs=${mounts_btrfs# }

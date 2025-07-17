@@ -6,7 +6,21 @@ from cmk.gui.plugins.wato import (
     HostRulespec,
     rulespec_registry,
 )
-from cmk.gui.cee.plugins.wato.agent_bakery.rulespecs.utils import RulespecGroupMonitoringAgentsAgentPlugins
+
+try:
+  from cmk.gui.cee.plugins.wato.agent_bakery.rulespecs.utils import RulespecGroupMonitoringAgentsAgentPlugins
+  #only CEE!
+  rulespec_registry.register(
+    HostRulespec(
+        group=RulespecGroupMonitoringAgentsAgentPlugins,
+        name="agent_config:btrfs_health",
+        valuespec=_valuespec_agent_config_btrfs_health,
+  ))
+
+except ModuleNotFoundError:
+  # RAW edition
+  pass
+    
 from cmk.gui.valuespec import (
     Alternative,
     FixedValue,
