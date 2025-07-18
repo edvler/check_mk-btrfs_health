@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Author: Matthias Maderer
-# E-Mail: edvler@edvler-blog.de
+# E-Mail: matthias.maderer@web.de
 # URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
 #example: \lib\python3\cmk\gui\plugins\wato\check_parameters\memory.py
 
-from cmk.gui.i18n import _
-from cmk.gui.valuespec import (
+from cmk.rulesets.v1 import Title
+from cmk.rulesets.v1.form_specs import (
     Dictionary,
-    DropdownChoice,
     Tuple,
-    TextAscii,
     Age,
-    Integer
+    Integer,
+    Filesize,
+    Alternative,
+    Percentage
 )
+from cmk.rulesets.v1.rule_specs import SpecialAgent, Topic
 
-from cmk.gui.plugins.wato import (
-    CheckParameterRulespecWithItem,
-    rulespec_registry,
-    RulespecGroupCheckParametersStorage
-)
+
 
 def _parameter_btrfs_health_scrub():
     return Dictionary(
@@ -60,17 +57,13 @@ def _parameter_btrfs_health_scrub():
         ]
     )
 
-
-rulespec_registry.register(
-    CheckParameterRulespecWithItem(
-        check_group_name="btrfs_health_ruleset_scrub",
-        group=RulespecGroupCheckParametersStorage,
-        item_spec=lambda: TextAscii(title=_('BTRFS Health scrub status'), ),
-        #item_spec=_itemspec_urbackup_check,
-        match_type='dict',
-        parameter_valuespec=_parameter_btrfs_health_scrub,
-        title=lambda: _("BTRFS Health scrub status"),
-    ))
+rule_spec_btrfs_health_ruleset_scrub = CheckParameters(
+    name="btrfs_health_ruleset_scrub",
+    topic=Topic.STORAGE,
+    parameter_form=_parameter_btrfs_health_scrub,
+    title=Title("BTRFS Health scrub status"),
+    condition=HostAndItemCondition(item_title=Title("BTRFS Health scrub status")),
+)
 
 def _parameter_btrfs_health_dstats():
     return Dictionary(
@@ -154,16 +147,15 @@ def _parameter_btrfs_health_dstats():
         ]
     )
 
-rulespec_registry.register(
-    CheckParameterRulespecWithItem(
-        check_group_name="btrfs_health_ruleset_dstats",
-        group=RulespecGroupCheckParametersStorage,
-        item_spec=lambda: TextAscii(title=_('BTRFS Health device stats'), ),
-        #item_spec=_itemspec_urbackup_check,
-        match_type='dict',
-        parameter_valuespec=_parameter_btrfs_health_dstats,
-        title=lambda: _("BTRFS Health device stats"),
-    ))
+
+rule_spec_btrfs_health_ruleset_dstats = CheckParameters(
+    name="btrfs_health_ruleset_dstats",
+    topic=Topic.STORAGE,
+    parameter_form=_parameter_btrfs_health_dstats,
+    title=Title("BTRFS Health device stats"),
+    condition=HostAndItemCondition(item_title=Title("BTRFS Health device stats")),
+)
+
 
 
 btrfs_usage_info=_(
@@ -293,14 +285,10 @@ def _parameter_btrfs_health_usage():
         ]
     )
 
-rulespec_registry.register(
-    CheckParameterRulespecWithItem(
-        check_group_name="btrfs_health_ruleset_usage",
-        group=RulespecGroupCheckParametersStorage,
-        item_spec=lambda: TextAscii(title=_('BTRFS Health block group allocation'), ),
-        #item_spec=_itemspec_urbackup_check,
-        match_type='dict',
-        parameter_valuespec=_parameter_btrfs_health_usage,
-        title=lambda: _("BTRFS Health block group allocation"),
-    ))
-
+rule_spec_btrfs_health_ruleset_usage = CheckParameters(
+    name="btrfs_health_ruleset_usage",
+    topic=Topic.STORAGE,
+    parameter_form=_parameter_btrfs_health_usage,
+    title=Title("BTRFS Health block group allocation"),
+    condition=HostAndItemCondition(item_title=Title("BTRFS Health block group allocation")),
+)

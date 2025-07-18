@@ -1,5 +1,8 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#!/usr/bin/env python3
+# Author: Matthias Maderer
+# E-Mail: matthias.maderer@web.de
+# URL: https://github.com/edvler/check_mk-btrfs_health
+# License: GPLv2
 
 from cmk.gui.i18n import _
 from cmk.gui.plugins.wato import (

@@ -1,6 +1,6 @@
 title: BTRFS health
 agents: linux
-author: Matthias Maderer <edvler@edvler-blog.de>
+author: Matthias Maderer <matthias.maderer@web.de>
 license: GPLv2
 distribution: check_mk
 description:
