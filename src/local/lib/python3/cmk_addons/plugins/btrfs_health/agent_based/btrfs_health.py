@@ -4,36 +4,61 @@
 # URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
-#from ctypes import sizeof
-from cmk.agent_based.v2 import *
+# Beispiel Check_MK Plugins
+# https://github.com/Checkmk/checkmk-docs/blob/master/examples/devel_check_plugins/ruleset_myhostgroups.py
+
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
+    CheckResult,
+    DiscoveryResult,
+    Result,
+    Service,
+    State,
+    Metric,
+    render,
+    check_levels,
+)
 import time
-import datetime
-import re
 
-def percent_or_absolute(param):
-    if (param is not None and isinstance(param, float)):
-        return "percent"
-    elif(param is not None and isinstance(param, int)):
-        return "absolute"
+def params_parser(params):
+    params_new = {}
 
-    return None
+    for p in params:
+        if params[p] is not None and isinstance(params[p], tuple):
+            if params[p][0] in ("fixed", "no_levels", "predictive"): #e.g ('fixed', (1, 1)) - New Check_MK 2.4 format
+                params_new[p] = params[p]            
+            elif isinstance(params[p][0], (int, float)) and isinstance(params[p][1], (int, float)):
+                    if p == 'metadata_intelligent':
+                        params_new[p] = {'metadata_combined_blocks_free': params[p][0], 'metadata_combined_metadata_relative_used': params[p][1]}
+                    else:
+                        if p in ('overall_allocation', 'data_allocation', 'metadata_allocation', 'system_allocation'):
+                            if (isinstance(params[p][0],float)) and (isinstance(params[p][0],float)):
+                                params_new[p] = (p + "_percentage",('fixed',(params[p][0], params[p][1])))
+                            if (isinstance(params[p][0],int)) and (isinstance(params[p][0],int)):
+                                params_new[p] = (p + "_absolute",('fixed',(params[p][0], params[p][1])))
+                        else:
+                            params_new[p] = ('fixed', (params[p][0], params[p][1]))
+            else:
+                params_new[p] = params[p]
+        else:
+            params_new[p] = params[p]
+
+    
+    return params_new
+
+
 
 def format_metric_name(metric: str):
     return 'bth_' + str.lower(metric)
-
-def warn_crit_decider(metric, warn, crit, summarytext: str, detailstext: str):
-    if metric >= crit:
-        return Result(state=State.CRIT, summary=summarytext, details=detailstext)
-    if metric >= warn:
-        return Result(state=State.WARN, summary=summarytext, details=detailstext)
-
-    return Result(state=State.OK, summary=summarytext, details=detailstext)
-
 
 def getDateFromString(datetime_string):
     return time.strptime(datetime_string, '%a %b %d %H:%M:%S %Y')
 
 def get_base_infos(line):
+    if "::" not in line[0]: # Only lines starting with a string containing "::" are relevant
+        return None, None, None
+
     volume = line[0].split("::")[1]
     infotype = line[0].split("::")[0]
 
@@ -42,6 +67,15 @@ def get_base_infos(line):
         device = volume + " " + line[1].split(".")[0]
 
     return volume,infotype,device
+
+
+def warn_crit_decider(metric, warn, crit, summarytext: str, detailstext: str):
+    if metric >= crit:
+        return Result(state=State.CRIT, summary=summarytext, details=detailstext)
+    if metric >= warn:
+        return Result(state=State.WARN, summary=summarytext, details=detailstext)
+
+    return Result(state=State.OK, summary=summarytext, details=detailstext)
 
 
 
@@ -98,14 +132,11 @@ def check_btrfs_health_scrub(item, params, section):
 
     match_count = 0
 
+    params_cmk_24 = params_parser(params)
+
     #fill all variables by parsing btrfs_health output line by line
     for i in range(len(section)):
         line = section[i]
-
-        #frist line is btrfs tools version
-        if (i==0):
-            btrfs_version = line[1]
-            continue
 
         #scrub::/mnt/test scrub status for 253728d8-e806-437d-acc1-1456aaf79e91
         #scrub::/mnt/test        scrub started at Fri Sep 30 22:54:23 2022, running for 00:00:05
@@ -118,6 +149,19 @@ def check_btrfs_health_scrub(item, params, section):
         #scrub::/bkp/bkp01 scrub status for 253728d8-e806-437d-acc1-1456aaf79e91
         #scrub::/bkp/bkp01       no stats available
         #scrub::/bkp/bkp01       total bytes scrubbed: 0.00B with 0 errors
+
+
+        # <<<btrfs_health_scrub>>>
+        # btrfs-progs v6.2
+        # scrub::/bkp/bkp01 UUID:             6e6d805d-6790-42b7-938d-6b8500628d74
+        # scrub::/bkp/bkp01 Scrub started:    Tue Jul 15 10:01:38 2025
+        # scrub::/bkp/bkp01 Status:           finished
+        # scrub::/bkp/bkp01 Duration:         2:58:46
+        # scrub::/bkp/bkp01 Total to scrub:   2.19TiB
+        # scrub::/bkp/bkp01 Rate:             183.26MiB/s
+        # scrub::/bkp/bkp01 Error summary:    no errors found
+
+
 
         volume, infotype, device = get_base_infos(line)
 
@@ -165,6 +209,7 @@ def check_btrfs_health_scrub(item, params, section):
                         scrub_errors = int(re.sub(r'^.+=', '', line[3]))
                     else:
                         scrub_errors = 9999999
+    #For end
 
     if (match_count == 0):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
@@ -182,20 +227,16 @@ def check_btrfs_health_scrub(item, params, section):
 
     #running scrub
     if(scrub_status == "running" and scrub_errors >= 0):
-        warn_scrub_runtime, critical_scrub_runtime = params['scrub_runtime']
-
-        summary_runtime="Scrub running since " + render.datetime(time.mktime(scrub_date)) + "; Errors found " + str(scrub_errors)
-
-        if scrub_dur < warn_scrub_runtime:
-            yield Result(state=State.OK, summary=summary_runtime)
-        if scrub_dur >= warn_scrub_runtime and scrub_dur < critical_scrub_runtime:
-            yield Result(state=State.WARN, summary=summary_runtime)
-        if scrub_dur >= critical_scrub_runtime:
-            yield Result(state=State.CRIT, summary=summary_runtime)
+        yield from check_levels(
+            scrub_dur,
+            levels_upper=params_cmk_24['scrub_runtime'],
+            boundaries=(0.0,None),
+            render_func=render.timespan        
+        )
         return
 
     #finished scrub
-    warn_scrub_age, critical_scrub_age = params['scrub_age']
+    warn_scrub_age, critical_scrub_age = params_cmk_24['scrub_age'][1]
 
     scrub_age = int(time.time() - time.mktime(scrub_date))
 
@@ -203,8 +244,7 @@ def check_btrfs_health_scrub(item, params, section):
     e = scrub_size[-3:]
     scrub_byte = to_byte(num,e)
 
-    #/opt/omd/versions/2.0.0p4.cre/lib/python3/cmk/gui/plugins/metrics
-    #e.g. grep -r "metric_info" | grep time
+
     yield Metric("age", int(scrub_age), levels=(warn_scrub_age, critical_scrub_age), boundaries=(0, None))
     yield Metric("runtime", scrub_dur, boundaries=(0, None))
     yield Metric("readsize", scrub_byte, boundaries=(0, None))
@@ -217,13 +257,15 @@ def check_btrfs_health_scrub(item, params, section):
     elif(scrub_errors == 0):
         yield warn_crit_decider(scrub_age, warn_scrub_age, critical_scrub_age, scrub_output_summary, scrub_output_detail)
 
+
+
 check_plugin_btrfs_scrub = CheckPlugin(
     name = "btrfs_health_scrub",
     service_name = "btrfs_health scrub status %s",
     discovery_function = inventory_btrfs_health_scrub,
     check_function = check_btrfs_health_scrub,
-    check_default_parameters = {'scrub_age': (604800, 864000),
-                                'scrub_runtime': (3600, 7200)
+    check_default_parameters = {'scrub_age': ('fixed',(604800, 864000)),
+                                'scrub_runtime': ('fixed',(3600, 7200))
                                 },
     check_ruleset_name = "btrfs_health_ruleset_scrub"
 )
@@ -233,16 +275,12 @@ check_plugin_btrfs_scrub = CheckPlugin(
 
 def check_btrfs_health_dstats(item, params, section):
     device_stats_errors = {}
-    device_stats_errors_sum = 0
+
+    params_cmk_24 = params_parser(params)
 
     #fill all variables by parsing btrfs_health output line by line
     for i in range(len(section)):
         line = section[i]
-
-        #frist line is btrfs tools version
-        if (i==0):
-            btrfs_version = line[1]
-            continue
 
         #get basic information from the begining of the line
         volume, infotype, device = get_base_infos(line)
@@ -263,33 +301,32 @@ def check_btrfs_health_dstats(item, params, section):
             if (len(line) >= 3):
                 metric = line[1].split(".")[1]
                 device_stats_errors[metric] = int(line[2])
-                device_stats_errors_sum += int(line[2])
 
     if (not "write_io_errs" in device_stats_errors):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
         return
 
     #If the item is a device stats item output the status
-    details = ""
     for errtype in device_stats_errors:
-        yield Metric(format_metric_name(errtype), int(device_stats_errors[errtype]), boundaries=(0, None))
+        yield from check_levels(
+            device_stats_errors[errtype],
+            levels_upper=params_cmk_24[errtype],
+            metric_name=format_metric_name(errtype),
+            label=errtype,
+            boundaries=(0,None)
+        )
 
-        warn, crit = params[errtype]
-
-        details = errtype + ": " + str(device_stats_errors[errtype])
-
-        yield warn_crit_decider(device_stats_errors[errtype], warn, crit, details, None)
 
 check_plugin_btrfs_dstats = CheckPlugin(
     name = "btrfs_health_dstats",
     service_name = "btrfs_health device stats %s",
     discovery_function = inventory_btrfs_health_dstats,
     check_function = check_btrfs_health_dstats,
-    check_default_parameters =  {'write_io_errs': (1,1),
-                                'read_io_errs': (1,1),
-                                'flush_io_errs': (1,1),
-                                'corruption_errs': (1,1),
-                                'generation_errs': (1,1),
+    check_default_parameters =  {'write_io_errs': ('fixed',(1,1)),
+                                'read_io_errs': ('fixed',(1,1)),
+                                'flush_io_errs': ('fixed',(1,1)),
+                                'corruption_errs': ('fixed',(1,1)),
+                                'generation_errs': ('fixed',(1,1)),
                                 },
     check_ruleset_name = "btrfs_health_ruleset_dstats"
 )
@@ -299,7 +336,9 @@ check_plugin_btrfs_dstats = CheckPlugin(
 
 def check_btrfs_health_usage(item, params, section):
     block_group_usage = {}
-
+    
+    params_cmk_24 = params_parser(params)
+    
     #fill all variables by parsing btrfs_health output line by line
     for i in range(len(section)):
         line = section[i]
@@ -361,38 +400,102 @@ def check_btrfs_health_usage(item, params, section):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
         return
 
+    #Metrics
     for metric in block_group_usage:
-        yield Metric(format_metric_name(metric), block_group_usage[metric], boundaries=(0, None))
+        #bla = _check_levels(params_cmk_24.get(metric, None))
 
+        yield Metric(format_metric_name(metric),
+                     block_group_usage[metric],
+                     boundaries=(0, None)
+                     )
 
-    yield allocation_yielder(params['metadata_allocation'][0], params['metadata_allocation'][1], block_group_usage['Metadata_used'], block_group_usage['Metadata_size'], "Metadata")
-    yield allocation_yielder(params['data_allocation'][0], params['data_allocation'][1], block_group_usage['Data_used'], block_group_usage['Data_size'], "Data")
-    yield allocation_yielder(params['system_allocation'][0], params['system_allocation'][1], block_group_usage['System_used'], block_group_usage['System_size'], "System")
-    yield allocation_yielder(params['overall_allocation'][0], params['overall_allocation'][1], block_group_usage['Device_allocated'], block_group_usage['Device_size'], "Overall")
+    #Checks
+    # yield from check_levels(
+    #     block_group_usage['Metadata_used'],
+    #     levels_upper=params_cmk_24['metadata_allocation'],
+    #     #metric_name=format_metric_name("Metadata_used"),
+    #     label="Metadata used",
+    #     render_func=render.disksize,
+    #     boundaries=(None,block_group_usage['Metadata_size'])
+    # )
+
+    # yield from check_levels(
+    #     block_group_usage['Data_used'],
+    #     levels_upper=params_cmk_24['data_allocation'],
+    #     #metric_name=format_metric_name("Data_used"),
+    #     label="Data used",
+    #     render_func=render.disksize,
+    #     boundaries=(None,block_group_usage['Data_size'])
+    # )
+
+    # yield from check_levels(
+    #     block_group_usage['System_used'],
+    #     levels_upper=params_cmk_24['system_allocation'],
+    #     #metric_name=format_metric_name("System_used"),
+    #     label="System used",
+    #     render_func=render.disksize,
+    #     boundaries=(None,block_group_usage['System_size'])
+    # )    
+
+    # yield from check_levels(
+    #     block_group_usage['Device_allocated'],
+    #     levels_upper=params_cmk_24['overall_allocation'],
+    #     #metric_name=format_metric_name("Device_allocated"),
+    #     label="Overall allocated",
+    #     render_func=render.disksize,
+    #     boundaries=(None,block_group_usage['Device_size'])
+    # )  
+
+    yield allocation_yielder(params_cmk_24['metadata_allocation'], 
+                             block_group_usage['Metadata_used'], 
+                             block_group_usage['Metadata_size'], 
+                             "Metadata")
+    yield allocation_yielder(params_cmk_24['data_allocation'],
+                             block_group_usage['Data_used'],
+                             block_group_usage['Data_size'],
+                             "Data")
+    yield allocation_yielder(params_cmk_24['system_allocation'],
+                             block_group_usage['System_used'],
+                             block_group_usage['System_size'],
+                             "System")
+    yield allocation_yielder(params_cmk_24['overall_allocation'],
+                             block_group_usage['Device_allocated'],
+                             block_group_usage['Device_size'],
+                             "Overall")
 
     #intelligent metadata check
-    if (params['metadata_intelligent'][0] >= 0 and params['metadata_intelligent'][1] >= 0):
-        pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
-        if (block_group_usage['Device_unallocated'] <= int(params['metadata_intelligent'][0])):
-            if(pm >= float(params['metadata_intelligent'][1])):
+    pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
+
+    levels = params_cmk_24['metadata_intelligent'];
+    if levels == None or levels ==("no_levels", None):
+        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
+     
+    blocks_free = int(params_cmk_24['metadata_intelligent']['metadata_combined_blocks_free'])
+    percent_usage_metadata = float(params_cmk_24['metadata_intelligent']['metadata_combined_metadata_relative_used'])
+
+    if (blocks_free >= 0 and percent_usage_metadata >= 0):
+        
+
+        if (block_group_usage['Device_unallocated'] <= int(blocks_free)):
+            if(pm >= percent_usage_metadata):
                 yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
                 return
         yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
 
-
-def allocation_yielder(warn, err, used, size, text):
+#helper for allocations
+def allocation_yielder(levels, used, size, text):
     p = (used/size)*100
-
     details = text + ": " + str(round(p,2)) + "% used (" + render.bytes(used) + " of " + render.bytes(size) 
 
-    if (warn == 0 and err == 0):
-        return warn_crit_decider(0,1,1, details + ", No warn/crit defined)",None)
-
-    if (percent_or_absolute(warn) == "percent"):
-        return warn_crit_decider(p,warn,err, details + ", warn/crit at " + str(warn) + "%/" + str(err) + "%)",None)
-    else:
-        return warn_crit_decider(used,warn,err, details + ", warn/crit at " + render.bytes(warn) + "/" + render.bytes(err) + ")",None)
-
+    if levels == None or levels ==("no_levels", None):
+        return Result(state=State.OK, summary=details + ", No warn/crit defined)")
+    elif levels[0].endswith("_absolute"):
+        warn,crit = levels[1][1]
+        return warn_crit_decider(used,warn,crit, details + ", warn/crit at " + render.bytes(warn) + "/" + render.bytes(crit) + ")",None)
+    elif levels[0].endswith("_percentage"):
+        warn,crit = levels[1][1]
+        return warn_crit_decider(p,warn,crit, details + ", warn/crit at " + str(warn) + "%/" + str(crit) + "%)",None)
+    
 
 
 check_plugin_btrfs_health = CheckPlugin(
@@ -400,11 +503,14 @@ check_plugin_btrfs_health = CheckPlugin(
     service_name = "btrfs_health block group allocation %s",
     discovery_function = inventory_btrfs_health_usage,
     check_function = check_btrfs_health_usage,
-    check_default_parameters = {'overall_allocation': (0,0),
-                                'data_allocation': (0,0),
-                                'metadata_allocation': (0,0),
-                                'system_allocation': (0,0),
-                                'metadata_intelligent': (5368709120,75.0), #5GB,75percent
+    check_default_parameters = {'overall_allocation': None,
+                                'data_allocation': None,
+                                'metadata_allocation': None,
+                                'system_allocation': None,
+                                'metadata_intelligent': {
+                                    'metadata_combined_blocks_free': 5368709120,
+                                    'metadata_combined_metadata_relative_used': 75.0
+                                    }
                                 },
     check_ruleset_name = "btrfs_health_ruleset_usage"
 )
