@@ -34,9 +34,9 @@ def params_parser(params):
                     else:
                         if p in ('overall_allocation', 'data_allocation', 'metadata_allocation', 'system_allocation'):
                             if (isinstance(params[p][0],float)) and (isinstance(params[p][0],float)):
-                                params_new[p] = (p + "_percentage",('fixed',(params[p][0], params[p][1])))
+                                params_new[p] = ("percent",('fixed',(params[p][0], params[p][1])))
                             if (isinstance(params[p][0],int)) and (isinstance(params[p][0],int)):
-                                params_new[p] = (p + "_absolute",('fixed',(params[p][0], params[p][1])))
+                                params_new[p] = ("absolute",('fixed',(params[p][0], params[p][1])))
                         else:
                             params_new[p] = ('fixed', (params[p][0], params[p][1]))
             else:
@@ -211,6 +211,7 @@ def check_btrfs_health_scrub(item, params, section):
                         scrub_errors = 9999999
     #For end
 
+    #Check if information is found
     if (match_count == 0):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
         return
@@ -302,6 +303,7 @@ def check_btrfs_health_dstats(item, params, section):
                 metric = line[1].split(".")[1]
                 device_stats_errors[metric] = int(line[2])
 
+    #Check if information is found
     if (not "write_io_errs" in device_stats_errors):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
         return
@@ -330,6 +332,8 @@ check_plugin_btrfs_dstats = CheckPlugin(
                                 },
     check_ruleset_name = "btrfs_health_ruleset_dstats"
 )
+
+
 
 
 
@@ -396,103 +400,65 @@ def check_btrfs_health_usage(item, params, section):
                 block_group_usage['System_size']  = int(line[2].split(":")[1][:-1])
                 block_group_usage['System_used']  = int(line[3].split(":")[1])
 
+    #Check if information is found
     if (not "Device_size" in block_group_usage):
         yield Result(state=State.UNKNOWN, summary="Filesystem not found (not mounted?, IO problems?)")
         return
 
     #Metrics
     for metric in block_group_usage:
-        #bla = _check_levels(params_cmk_24.get(metric, None))
-
         yield Metric(format_metric_name(metric),
                      block_group_usage[metric],
                      boundaries=(0, None)
                      )
 
-    #Checks
-    # yield from check_levels(
-    #     block_group_usage['Metadata_used'],
-    #     levels_upper=params_cmk_24['metadata_allocation'],
-    #     #metric_name=format_metric_name("Metadata_used"),
-    #     label="Metadata used",
-    #     render_func=render.disksize,
-    #     boundaries=(None,block_group_usage['Metadata_size'])
-    # )
-
-    # yield from check_levels(
-    #     block_group_usage['Data_used'],
-    #     levels_upper=params_cmk_24['data_allocation'],
-    #     #metric_name=format_metric_name("Data_used"),
-    #     label="Data used",
-    #     render_func=render.disksize,
-    #     boundaries=(None,block_group_usage['Data_size'])
-    # )
-
-    # yield from check_levels(
-    #     block_group_usage['System_used'],
-    #     levels_upper=params_cmk_24['system_allocation'],
-    #     #metric_name=format_metric_name("System_used"),
-    #     label="System used",
-    #     render_func=render.disksize,
-    #     boundaries=(None,block_group_usage['System_size'])
-    # )    
-
-    # yield from check_levels(
-    #     block_group_usage['Device_allocated'],
-    #     levels_upper=params_cmk_24['overall_allocation'],
-    #     #metric_name=format_metric_name("Device_allocated"),
-    #     label="Overall allocated",
-    #     render_func=render.disksize,
-    #     boundaries=(None,block_group_usage['Device_size'])
-    # )  
-
-    yield allocation_yielder(params_cmk_24['metadata_allocation'], 
+    #Checks allocation
+    yield allocation_yielder(params_cmk_24['metadata_allocation'] if 'metadata_allocation' in params_cmk_24 else None, 
                              block_group_usage['Metadata_used'], 
                              block_group_usage['Metadata_size'], 
                              "Metadata")
-    yield allocation_yielder(params_cmk_24['data_allocation'],
+    yield allocation_yielder(params_cmk_24['data_allocation'] if 'data_allocation' in params_cmk_24 else None,
                              block_group_usage['Data_used'],
                              block_group_usage['Data_size'],
                              "Data")
-    yield allocation_yielder(params_cmk_24['system_allocation'],
+    yield allocation_yielder(params_cmk_24['system_allocation'] if 'system_allocation' in params_cmk_24 else None,
                              block_group_usage['System_used'],
                              block_group_usage['System_size'],
                              "System")
-    yield allocation_yielder(params_cmk_24['overall_allocation'],
+    yield allocation_yielder(params_cmk_24['overall_allocation'] if 'overall_allocation' in params_cmk_24 else None,
                              block_group_usage['Device_allocated'],
                              block_group_usage['Device_size'],
                              "Overall")
 
     #intelligent metadata check
+    levels = params_cmk_24['metadata_intelligent'] if 'metadata_inelligent' in params_cmk_24 else None
     pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
-
-    levels = params_cmk_24['metadata_intelligent'];
+    
+    # OK if no level is defined
     if levels == None or levels ==("no_levels", None):
-        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
-     
+        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable. No levels defined.")
+    
     blocks_free = int(params_cmk_24['metadata_intelligent']['metadata_combined_blocks_free'])
     percent_usage_metadata = float(params_cmk_24['metadata_intelligent']['metadata_combined_metadata_relative_used'])
 
-    if (blocks_free >= 0 and percent_usage_metadata >= 0):
-        
-
-        if (block_group_usage['Device_unallocated'] <= int(blocks_free)):
-            if(pm >= percent_usage_metadata):
-                yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
-                return
-        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
+    if (block_group_usage['Device_unallocated'] <= int(blocks_free)):
+        if(pm >= percent_usage_metadata):
+            yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
+        else:
+            yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
 
 #helper for allocations
 def allocation_yielder(levels, used, size, text):
     p = (used/size)*100
     details = text + ": " + str(round(p,2)) + "% used (" + render.bytes(used) + " of " + render.bytes(size) 
 
+    # OK if no level is defined
     if levels == None or levels ==("no_levels", None):
-        return Result(state=State.OK, summary=details + ", No warn/crit defined)")
-    elif levels[0].endswith("_absolute"):
+        return Result(state=State.OK, summary=details + ", No levels defined)")
+    elif levels[0] == 'absolute':
         warn,crit = levels[1][1]
         return warn_crit_decider(used,warn,crit, details + ", warn/crit at " + render.bytes(warn) + "/" + render.bytes(crit) + ")",None)
-    elif levels[0].endswith("_percentage"):
+    elif levels[0] == 'percent':
         warn,crit = levels[1][1]
         return warn_crit_decider(p,warn,crit, details + ", warn/crit at " + str(warn) + "%/" + str(crit) + "%)",None)
     
@@ -503,10 +469,7 @@ check_plugin_btrfs_health = CheckPlugin(
     service_name = "btrfs_health block group allocation %s",
     discovery_function = inventory_btrfs_health_usage,
     check_function = check_btrfs_health_usage,
-    check_default_parameters = {'overall_allocation': None,
-                                'data_allocation': None,
-                                'metadata_allocation': None,
-                                'system_allocation': None,
+    check_default_parameters = {
                                 'metadata_intelligent': {
                                     'metadata_combined_blocks_free': 5368709120,
                                     'metadata_combined_metadata_relative_used': 75.0

@@ -214,41 +214,38 @@ rule_spec_btrfs_health_ruleset_dstats = CheckParameters(
 #                    )
 
 
-def migrate_metadata_intelligent(model):
-    #with open('/tmp/output.txt', 'w') as filehandle:
-        #filehandle.write(str(type(model)) + '\n')
-        
-        #for key in model.keys():
-        #    filehandle.write(str(key))
-       # filehandle.write(str(model) + '\n')
-        #filehandle.write(str(model[1]) + '\n')
-    #    filehandle.write(str(model[1]) + '\n')
-   #     filehandle.write(str(model[0]))
-       #filehandle.write(' '.join(model))
-
-    # check if model is a dict or a tuple/list
-    # tuple = old check_mk format
-    # dict = new check_mk format
-    if isinstance(model, dict):
-        return {
-            "metadata_combined_blocks_free": model["metadata_combined_blocks_free"],
-            "metadata_combined_metadata_relative_used": model["metadata_combined_metadata_relative_used"]
-        }
-    else:
+def _migrate_metadata_intelligent(model):
+    if isinstance(model, tuple) and len(model) == 2:
         return {
             "metadata_combined_blocks_free": model[0], # First value in Tuple = minimum blocks free
             "metadata_combined_metadata_relative_used": model[1] # Second value in Tuple = percentage of metadata used
-        }        
+        }
+    return model
 
+def _migrate_allocation(model):
+    if isinstance(model, tuple) and len(model) == 2 and model[0] not in ('percent', 'absolute'):
+        if isinstance(model[0], float) and isinstance(model[1], float):
+            return ('percent',('fixed', (model[0], model[1])))
+        elif isinstance(model[0], int) and isinstance(model[1], int):
+            return ('absolute',('fixed', (model[0], model[1])))
+    
+    return model
 
 def _parameter_btrfs_health_usage():
     return Dictionary(
+        #migrate=lambda model: {
+        #    'metadata_intelligent': _migrate_metadata_intelligent(model.get('metadata_intelligent')),
+        #    'metadata_allocation': _migrate_allocation(model.get('metadata_allocation')),
+        #    'system_allocation': _migrate_allocation(model.get('system_allocation')),
+        #    'data_allocation': _migrate_allocation(model.get('data_allocation')),
+        #    'overall_allocation': _migrate_allocation(model.get('overall_allocation')),
+        #},        
         elements = {
             "metadata_intelligent": DictElement (
                 parameter_form=Dictionary(
                     title=Title("METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
                     #help_text=Help("If unallocated blocks below the given limit AND metadata allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
-                    migrate = lambda model: migrate_metadata_intelligent(model),
+                    migrate = lambda model: _migrate_metadata_intelligent(model),
                     elements = {
                         'metadata_combined_blocks_free': DictElement(
                             required=True,
@@ -271,28 +268,29 @@ def _parameter_btrfs_health_usage():
             'metadata_allocation': DictElement(
                 parameter_form=CascadingSingleChoice(
                     title=Title('METADATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations.'),
+                    migrate=lambda model: _migrate_allocation(model),
                     elements=[
                         CascadingSingleChoiceElement(
-                            name="metadata_allocation_percentage",          
+                            name="percent",          
                             title=Title("Relative"),
                             parameter_form=SimpleLevels(
                                 form_spec_template = Percentage(),
                                 level_direction = LevelDirection.UPPER,
-                                prefill_fixed_levels = InputHint(
+                                prefill_fixed_levels = DefaultValue(
                                     value=(80, 90)  # Warning at or above 80%, Critical at or above 90%
                                 )
                             )
                         ),
                         CascadingSingleChoiceElement(
-                            name="metadata_allocation_absolute",
+                            name="absolute",
                             title = Title('Absolute'),
                             parameter_form=SimpleLevels(
                                 form_spec_template = DataSize(
                                     displayed_magnitudes=[IECMagnitude.GIBI, IECMagnitude.MEBI],
                                 ),
                                 level_direction = LevelDirection.UPPER,
-                                prefill_fixed_levels = InputHint(
-                                    value=(1024*1024*1024*1, 1024*1024*1024*2)
+                                prefill_fixed_levels = DefaultValue(
+                                    value=(1024*1024*1024*2, 1024*1024*1024*2)
                                 )
                             )
                         )                      
@@ -303,9 +301,10 @@ def _parameter_btrfs_health_usage():
             'system_allocation': DictElement(
                 parameter_form=CascadingSingleChoice(
                     title=Title('SYSTEM allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations.'),
+                    migrate=lambda model: _migrate_allocation(model),
                     elements=[
                         CascadingSingleChoiceElement(
-                            name="system_allocation_percentage",
+                            name="percent",
                             title=Title('Relative'),
                             parameter_form=SimpleLevels(
                                 form_spec_template = Percentage(),
@@ -316,7 +315,7 @@ def _parameter_btrfs_health_usage():
                             )
                         ),
                         CascadingSingleChoiceElement(
-                            name="system_allocation_absolute",
+                            name="absolute",
                             title=Title('Absolute'),
                             parameter_form=SimpleLevels(
                                 form_spec_template = DataSize(
@@ -335,9 +334,10 @@ def _parameter_btrfs_health_usage():
             'data_allocation': DictElement(
                 parameter_form=CascadingSingleChoice(
                     title=Title('DATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations.'),
+                    migrate=lambda model: _migrate_allocation(model),                    
                     elements=[
                         CascadingSingleChoiceElement(
-                            name="data_allocation_percentage",
+                            name="percent",
                             title = Title('Relative'),
                             parameter_form=SimpleLevels(
                                 form_spec_template = Percentage(),
@@ -348,7 +348,7 @@ def _parameter_btrfs_health_usage():
                             )
                         ),
                         CascadingSingleChoiceElement(
-                            name="data_allocation_absolute",
+                            name="absolute",
                             title = Title('Absolute'),
                             parameter_form=SimpleLevels(
                                 form_spec_template = DataSize(
@@ -367,9 +367,10 @@ def _parameter_btrfs_health_usage():
             'overall_allocation': DictElement(
                 parameter_form=CascadingSingleChoice(
                     title=Title('Absolute DATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations.'),
+                    migrate=lambda model: _migrate_allocation(model),                    
                     elements=[
                         CascadingSingleChoiceElement(
-                            name="overall_allocation_percentage",
+                            name="percent",
                             title = Title('Relative'),           
                             parameter_form=SimpleLevels(
                                 form_spec_template = Percentage(),
@@ -380,7 +381,7 @@ def _parameter_btrfs_health_usage():
                             )
                         ),
                         CascadingSingleChoiceElement(
-                            name="overall_allocation_absolute",
+                            name="absolute",
                             title = Title('Absolute'),            
                             parameter_form=SimpleLevels(
                                 form_spec_template = DataSize(
