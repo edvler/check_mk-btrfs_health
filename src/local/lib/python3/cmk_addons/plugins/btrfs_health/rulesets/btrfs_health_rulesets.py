@@ -4,50 +4,33 @@
 # URL: https://github.com/edvler/check_mk-btrfs_health
 # License: GPLv2
 
-#example: \lib\python3\cmk\gui\plugins\wato\check_parameters\memory.py
-
 from cmk.rulesets.v1 import (
     Help,
-    Label,
     Title,
 )
 from cmk.rulesets.v1.form_specs import (
-    BooleanChoice,
     DefaultValue,
     DictElement,
-    DictGroup,
     Dictionary,
     Integer,
     InputHint,
     LevelDirection,
-    List,
     migrate_to_upper_integer_levels,
     migrate_to_upper_float_levels,
     SimpleLevels,
-    String,
     TimeMagnitude,
-    SIMagnitude,
     IECMagnitude,
     TimeSpan,
-    validators,
     DataSize,
     Percentage,
     CascadingSingleChoice,
     CascadingSingleChoiceElement,
-    FixedValue,
-    MultipleChoice,
-    MultipleChoiceElement
     )
 from cmk.rulesets.v1.rule_specs import (
-    AgentConfig,
     CheckParameters,
-    DiscoveryParameters,
     HostAndItemCondition,
     Topic,
 )
-
-
-#Migrations: https://github.com/HeinleinSupport/check_mk_extensions/blob/cmk2.3/sslcertificates/rulesets/sslcertificates.py#L55
 
 def _parameter_btrfs_health_scrub():
     return Dictionary(
@@ -244,7 +227,6 @@ def _parameter_btrfs_health_usage():
             "metadata_intelligent": DictElement (
                 parameter_form=Dictionary(
                     title=Title("METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
-                    #help_text=Help("If unallocated blocks below the given limit AND metadata allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
                     migrate = lambda model: _migrate_metadata_intelligent(model),
                     elements = {
                         'metadata_combined_blocks_free': DictElement(
@@ -277,7 +259,7 @@ def _parameter_btrfs_health_usage():
                                 form_spec_template = Percentage(),
                                 level_direction = LevelDirection.UPPER,
                                 prefill_fixed_levels = DefaultValue(
-                                    value=(80, 90)  # Warning at or above 80%, Critical at or above 90%
+                                    value=(80, 90)
                                 )
                             )
                         ),
@@ -310,7 +292,7 @@ def _parameter_btrfs_health_usage():
                                 form_spec_template = Percentage(),
                                 level_direction = LevelDirection.UPPER,
                                 prefill_fixed_levels = InputHint(
-                                    value=(80, 90)  # Warning at or above 80%, Critical at or above 90%
+                                    value=(80, 90)
                                 )
                             )
                         ),
@@ -343,7 +325,7 @@ def _parameter_btrfs_health_usage():
                                 form_spec_template = Percentage(),
                                 level_direction = LevelDirection.UPPER,
                                 prefill_fixed_levels = InputHint(
-                                    value=(80, 90)  # Warning at or above 80%, Critical at or above 90%
+                                    value=(80, 90)
                                 )
                             )
                         ),
@@ -376,7 +358,7 @@ def _parameter_btrfs_health_usage():
                                 form_spec_template = Percentage(),
                                 level_direction = LevelDirection.UPPER,
                                 prefill_fixed_levels = InputHint(
-                                    value=(80, 90)  # Warning at or above 80%, Critical at or above 90%
+                                    value=(80, 90)
                                 )
                             )
                         ),
@@ -406,181 +388,3 @@ rule_spec_btrfs_health_ruleset_usage = CheckParameters(
     title=Title("BTRFS Health block group allocation"),
     condition=HostAndItemCondition(item_title=Title("BTRFS Health block group allocation")),
 )
-
-    #return Dictionary(
-    #    elements = {
-            # "test": DictElement (
-            #     parameter_form=MultipleChoice(
-            #         show_toggle_all=True,
-            #         title=Title("Test"),
-            #         elements=[
-            #             MultipleChoiceElement(
-            #                 name="test1",
-            #                 title=Title("Test 1"),
-            #                 #parameter_form=FixedValue(value=None),
-            #             ),
-            #             MultipleChoiceElement(
-            #                 name="test2",
-            #                 title=Title("Test 2"),
-            #                 #parameter_form=FixedValue(value=None),
-            #             ),
-            #         ],
-            #         #prefill=DefaultValue(value="test1")
-
-            #     )
-            # ),
-    
-            # "proto": DictElement(
-            #     parameter_form=CascadingSingleChoice(
-            #         title=Title("Protocol"),
-            #         #prefill=DefaultValue("https"),
-            #         elements=[
-            #             CascadingSingleChoiceElement(
-            #                 name="tcp4",
-            #                 title=Title("TCP v4"),
-            #                 parameter_form=FixedValue(value=None),
-            #             ),
-            #             CascadingSingleChoiceElement(
-            #                 name="tcp6",
-            #                 title=Title("TCP v6"),
-            #                 parameter_form=FixedValue(value=None),
-            #             ),
-            #             CascadingSingleChoiceElement(
-            #                 name="udp4",
-            #                 title=Title("UDP v4"),
-            #                 parameter_form=FixedValue(value=None),
-            #             ),
-            #             CascadingSingleChoiceElement(
-            #                 name="udp6",
-            #                 title=Title("UDP v6"),
-            #                 parameter_form=FixedValue(value=None),
-            #             ),
-            #         ],
-            #     ),
-            # ),
-
-            #'metadata_intelligent': DictElement(
-            #    #title = Title("METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
-            #    parameter_form=SimpleLevels(
-            #        title = Title('Minimum unallocated block groups'),
-            #        migrate = lambda model: migrate_metadata_intelligent(model,"size"),
-            #        level_direction = LevelDirection.LOWER,
-            #        form_spec_template = DataSize(
-            #            displayed_magnitudes=[SIMagnitude.GIGA, SIMagnitude.MEGA],
-            #        ),                    
-            #        prefill_fixed_levels = InputHint(
-            #            value=(1, 1)
-            #        )
-            #    )
-            #),
-
-    #     required_keys=[],
-    #     elements = [   
-    #         ('metadata_intelligent': DictElement(
-    #              title = Title("METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
-    #              help=btrfs_usage_info,
-    #              elements = [
-    #                 Filesize(title = Title("Minimum unallocated block groups")),
-    #                 Percentage(title = Title("METADATA allocation in percent"), unit=_("percent"), default_value=(75.0)),
-    #              ]
-    #         )
-    #       ),             
-    #         (
-    #             "metadata_allocation",
-    #             Alternative(
-    #                 title = Title("METADATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
-                    
-    #                 help=btrfs_usage_info,
-    #                 elements=[
-    #                     Tuple(
-    #                         title = Title("METADATA allocation relative to METADATA size"),
-    #                         elements=[
-    #                             Percentage(title = Title("Warning at or above"), unit=_("percent")),
-    #                             Percentage(title = Title("Critical at or above"), unit=_("percent")),
-    #                         ],
-    #                     ),
-    #                     Tuple(
-    #                         title = Title("Absolute METADATA allocation"),
-    #                         elements=[
-    #                             Filesize(title = Title("Warning at or above")),
-    #                             Filesize(title = Title("Critical at or above")),
-    #                         ],
-    #                     ),
-    #                 ],
-    #             ),
-    #         ),
-    #         (
-    #             "system_allocation",
-    #             Alternative(
-    #                 title = Title("SYSTEM allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
-    #                 default_value=(70.0,80.0),
-                    
-    #                 help=btrfs_usage_info,
-    #                 elements=[
-    #                     Tuple(
-    #                         title = Title("SYSTEM allocation relative to SYSTEM size"),
-    #                         elements=[
-    #                             Percentage(title = Title("Warning at or above"), unit=_("percent")),
-    #                             Percentage(title = Title("Critical at or above"), unit=_("percent")),
-    #                         ],
-    #                     ),
-    #                     Tuple(
-    #                         title = Title("Absolute SYSTEM allocation"),
-    #                         elements=[
-    #                             Filesize(title = Title("Warning at or above")),
-    #                             Filesize(title = Title("Critical at or above")),
-    #                         ],
-    #                     ),
-    #                 ],
-    #             ),
-    #         ),
-    #         (
-    #             "data_allocation",
-    #             Alternative(
-    #                 title = Title("DATA allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
-    #                 help=btrfs_usage_info,
-    #                 elements=[
-    #                     Tuple(
-    #                         title = Title("DATA allocation relative to DATA size"),
-    #                         elements=[
-    #                             Percentage(title = Title("Warning at or above"), unit=_("percent")),
-    #                             Percentage(title = Title("Critical at or above"), unit=_("percent")),
-    #                         ],
-    #                     ),
-    #                     Tuple(
-    #                         title = Title("Absolute DATA allocation"),
-    #                         elements=[
-    #                             Filesize(title = Title("Warning at or above")),
-    #                             Filesize(title = Title("Critical at or above")),
-    #                         ],
-    #                     ),
-    #                 ],
-    #             ),
-    #         ),
-    #         (
-    #             "overall_allocation",
-    #             Alternative(
-    #                 title = Title("OVERALL allocation (cmd: btrfs filesystem usage). Activate Help -> Inline Help for more informations."),
-    #                 help=btrfs_usage_info,
-    #                 elements=[
-    #                     Tuple(
-    #                         title = Title("OVERALL allocation relative to OVERALL size"),
-    #                         elements=[
-    #                             Percentage(title = Title("Warning at or above"), unit=_("percent")),
-    #                             Percentage(title = Title("Critical at or above"), unit=_("percent")),
-    #                         ],
-    #                     ),
-    #                     Tuple(
-    #                         title = Title("Absolute OVERALL allocation"),
-    #                         elements=[
-    #                             Filesize(title = Title("Warning at or above")),
-    #                             Filesize(title = Title("Critical at or above")),
-    #                         ],
-    #                     ),
-    #                 ],
-    #             ),
-    #         ),           
-    #     ]
-    # )
-
-

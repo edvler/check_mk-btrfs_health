@@ -8,10 +8,7 @@
 # https://github.com/Checkmk/checkmk-docs/blob/master/examples/devel_check_plugins/ruleset_myhostgroups.py
 
 from cmk.agent_based.v2 import (
-    AgentSection,
     CheckPlugin,
-    CheckResult,
-    DiscoveryResult,
     Result,
     Service,
     State,
@@ -19,6 +16,7 @@ from cmk.agent_based.v2 import (
     render,
     check_levels,
 )
+import re
 import time
 
 def params_parser(params):
@@ -161,6 +159,18 @@ def check_btrfs_health_scrub(item, params, section):
         # scrub::/bkp/bkp01 Rate:             183.26MiB/s
         # scrub::/bkp/bkp01 Error summary:    no errors found
 
+        # <<<btrfs_health_scrub>>>
+        # btrfs-progs v5.16.2
+        # scrub::/mnt/test UUID:             7afde3c2-8b19-47cc-bf0a-c11a45b2e0bd
+        # scrub::/mnt/test Scrub started:    Tue May 14 07:25:42 2024
+        # scrub::/mnt/test Status:           finished
+        # scrub::/mnt/test Duration:         0:00:00
+        # scrub::/mnt/test Total to scrub:   292.00KiB
+        # scrub::/mnt/test Rate:             0.00B/s
+        # scrub::/mnt/test Error summary:    csum=1
+        # scrub::/mnt/test   Corrected:      0
+        # scrub::/mnt/test   Uncorrectable:  1
+        # scrub::/mnt/test   Unverified:     0
 
 
         volume, infotype, device = get_base_infos(line)
@@ -254,7 +264,7 @@ def check_btrfs_health_scrub(item, params, section):
     scrub_output_detail = 'Warn/crit at ' + render.timespan(warn_scrub_age) + '/' + render.timespan(critical_scrub_age) + ')'
 
     if(scrub_errors > 0):
-        yield Result(state=State.CRIT, summary=str(scrub_errors) + " found. Check filesystem with btrfs scrub status -R")
+        yield Result(state=State.CRIT, summary=str(scrub_errors) + " scrub error found. Check filesystem with btrfs scrub status -R")
     elif(scrub_errors == 0):
         yield warn_crit_decider(scrub_age, warn_scrub_age, critical_scrub_age, scrub_output_summary, scrub_output_detail)
 
@@ -270,6 +280,44 @@ check_plugin_btrfs_scrub = CheckPlugin(
                                 },
     check_ruleset_name = "btrfs_health_ruleset_scrub"
 )
+
+
+# root@pve04-livecd:/opt/omd/sites/monitoring# btrfs scrub status -R /mnt/test/
+# UUID:             7afde3c2-8b19-47cc-bf0a-c11a45b2e0bd
+# Scrub started:    Tue May 14 07:25:42 2024
+# Status:           finished
+# Duration:         0:00:00
+#         data_extents_scrubbed: 1
+#         tree_extents_scrubbed: 18
+#         data_bytes_scrubbed: 4096
+#         tree_bytes_scrubbed: 294912
+#         read_errors: 0
+#         csum_errors: 1
+#         verify_errors: 0
+#         no_csum: 0
+#         csum_discards: 0
+#         super_errors: 0
+#         malloc_errors: 0
+#         uncorrectable_errors: 1
+#         unverified_errors: 0
+#         corrected_errors: 0
+#         last_physical: 213254144
+
+
+# root@pve04-livecd:/opt/omd/sites/monitoring# btrfs scrub status /mnt/test/
+# UUID:             7afde3c2-8b19-47cc-bf0a-c11a45b2e0bd
+# Scrub started:    Tue May 14 07:25:42 2024
+# Status:           finished
+# Duration:         0:00:00
+# Total to scrub:   292.00KiB
+# Rate:             0.00B/s
+# Error summary:    csum=1
+#   Corrected:      0
+#   Uncorrectable:  1
+#   Unverified:     0
+
+
+
 
 
 

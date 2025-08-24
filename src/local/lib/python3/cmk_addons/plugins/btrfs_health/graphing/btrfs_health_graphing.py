@@ -20,16 +20,11 @@ from cmk.graphing.v1.graphs import (
 )
 from cmk.graphing.v1.metrics import (
     Color,
-    Constant,
     CriticalOf,
     DecimalNotation,
-    Fraction,
     IECNotation,
-    MaximumOf,
     Metric,
-    Product,
     StrictPrecision,
-    Sum,
     Difference,
     Unit,
     WarningOf,
