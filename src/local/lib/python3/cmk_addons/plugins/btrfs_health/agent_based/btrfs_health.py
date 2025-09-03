@@ -479,26 +479,25 @@ def check_btrfs_health_usage(item, params, section):
                              "Overall")
 
     #intelligent metadata check
-    levels = params_cmk_24['metadata_intelligent'] if 'metadata_inelligent' in params_cmk_24 else None
+    levels = params_cmk_24['metadata_intelligent'] if 'metadata_intelligent' in params_cmk_24 else None
     pm = (block_group_usage['Metadata_used']/block_group_usage['Metadata_size'])*100
     
     # OK if no level is defined
     if levels == None or levels ==("no_levels", None):
-        yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable. No levels defined.")
+        yield Result(state=State.UNKNOWN, summary="Combined Metadata Check: No levels defined. Please define levels for this check!")
     
     blocks_free = int(params_cmk_24['metadata_intelligent']['metadata_combined_blocks_free'])
     percent_usage_metadata = float(params_cmk_24['metadata_intelligent']['metadata_combined_metadata_relative_used'])
 
-    if (block_group_usage['Device_unallocated'] <= int(blocks_free)):
-        if(pm >= percent_usage_metadata):
-            yield Result(state=State.CRIT, summary="METADATA allocation above " + str(round(pm,0)) + "% and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
-        else:
-            yield Result(state=State.OK, summary="METADATA allocation: " + str(round(pm,0)) + "%; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable.")
+    if (block_group_usage['Device_unallocated'] <= int(blocks_free) and pm >= percent_usage_metadata):
+        yield Result(state=State.CRIT, summary="Combined Metadata Check: METADATA allocation above " + render.percent(pm) + " and only " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable! Use btrfs filesystem usage to investigate.")
+    else:
+        yield Result(state=State.OK, summary="Combined Metadata Check: METADATA allocation " + render.percent(pm) + "; " + render.bytes(block_group_usage['Device_unallocated']) + " unallocated block groups avaliable (critical if: Metadata allocated percent > " + render.percent(percent_usage_metadata) + "; and Block groups unallocated < " + render.bytes(blocks_free) + ")")
 
 #helper for allocations
 def allocation_yielder(levels, used, size, text):
     p = (used/size)*100
-    details = text + ": " + str(round(p,2)) + "% used (" + render.bytes(used) + " of " + render.bytes(size) 
+    details = text + ": " + render.percent(p) + " used (" + render.bytes(used) + " of " + render.bytes(size) 
 
     # OK if no level is defined
     if levels == None or levels ==("no_levels", None):
@@ -508,7 +507,7 @@ def allocation_yielder(levels, used, size, text):
         return warn_crit_decider(used,warn,crit, details + ", warn/crit at " + render.bytes(warn) + "/" + render.bytes(crit) + ")",None)
     elif levels[0] == 'percent':
         warn,crit = levels[1][1]
-        return warn_crit_decider(p,warn,crit, details + ", warn/crit at " + str(warn) + "%/" + str(crit) + "%)",None)
+        return warn_crit_decider(p,warn,crit, details + ", warn/crit at " + render.percent(warn) + "/" + render.percent(crit) + ")",None)
     
 
 
