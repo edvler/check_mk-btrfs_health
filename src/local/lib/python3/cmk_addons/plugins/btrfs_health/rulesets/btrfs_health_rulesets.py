@@ -181,20 +181,20 @@ rule_spec_btrfs_health_ruleset_dstats = CheckParameters(
 
 
 
-# btrfs_usage_info=_(
-#                        "The BTRFS filesystem stores data in a internal structure called block groups. " 
-#                        "More informations could be found in the manpage: man mkfs.btrfs -> section BLOCK GROUPS, CHUNKS, RAID. "
-#                        "From the manpage: "
-#                        "-- A typical size of metadata block group is 256MiB (filesystem smaller than 50GiB) and 1GiB (larger than 50GiB), for data it’s 1GiB. The system block group size is a few megabytes. -- "
-#                        "The command 'btrfs filesystem usage ' displays the allocated sizes. "
-#                        "As long as 'Device unallocated' are greater than 1GB new block groups can be always allocated and there is no problem. "
-#                        "But There are some situations that are cirtical: "
-#                        "1. No 'Device unallocated' space is avaliable (or less than 1GB) AND Metadata is running out of space "
-#                        "2. No 'Device unallocated' space is avaliable (or less than 1GB) AND System is running out of space "
-#                        "If no 'Device unallocated' space is avaliable two fixes availiable: "
-#                        "- extend the disk "
-#                        "- OR man btrfs-balance --> See examples for parameter -dusage or -musage "
-#                    )
+btrfs_usage_info=(
+                       "The BTRFS filesystem stores data in a internal structure called block groups. " 
+                       "More informations could be found in the manpage: man mkfs.btrfs -> section BLOCK GROUPS, CHUNKS, RAID. "
+                       "Excerpt from the manpage: "
+                       "A typical size of metadata block group is 256MiB (filesystem smaller than 50GiB) and 1GiB (larger than 50GiB), for data it’s 1GiB. The system block group size is a few megabytes."
+                       "The command 'btrfs filesystem usage ' displays the allocated sizes. "
+                       "As long as 'Device unallocated' are greater than 1GB new block groups can be always allocated and there is no problem. "
+                       "But There are some situations that are cirtical: "
+                       "1. No 'Device unallocated' space is avaliable (or less than 1GB) AND Metadata is running out of space "
+                       "2. No 'Device unallocated' space is avaliable (or less than 1GB) AND System is running out of space "
+                       "If no 'Device unallocated' space is avaliable two fixes availiable: "
+                       "1. extend the disk "
+                       "2. OR man btrfs-balance --> See examples for parameter -dusage or -musage "
+                   )
 
 
 def _migrate_metadata_intelligent(model):
@@ -226,6 +226,7 @@ def _parameter_btrfs_health_usage():
         elements = {
             "metadata_intelligent": DictElement (
                 parameter_form=Dictionary(
+                    help_text = Help(btrfs_usage_info),
                     title=Title("METADATA combined: If unnallocated blocks below the given limit AND METADATA allocation above the given percent, this check changes to crit. Activate Help -> Inline Help for more informations."),
                     migrate = lambda model: _migrate_metadata_intelligent(model),
                     elements = {
